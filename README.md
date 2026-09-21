@@ -1,9 +1,10 @@
-> [!WARNING]
-> 🍐 PearPass is currently paused from active development, so please use at your own caution until further notice.
-
 # pearpass-lib-native-messaging-bridge
 
-Native messaging bridge for PearPass browser extension. This library enables secure communication between the PearPass browser extension and the PearPass desktop application using Chrome's Native Messaging protocol and IPC (Inter-Process Communication).
+Native messaging bridge for the Lockwright browser extension. It carries messages between the extension and the Lockwright desktop app over Chrome Native Messaging and a local IPC socket.
+
+Site: [lockwright.dexterity.works](https://lockwright.dexterity.works)
+
+Community fork of PearPass (Apache 2.0). Not affiliated with or endorsed by Tether Data or the Pears project.
 
 ## Table of Contents
 
@@ -17,7 +18,7 @@ Native messaging bridge for PearPass browser extension. This library enables sec
 ## Features
 
 - **Chrome Native Messaging Protocol**: Implements Chrome's native messaging protocol for browser-to-native app communication
-- **IPC Bridge**: Bridges browser extension messages to the PearPass desktop app via IPC
+- **IPC Bridge**: Bridges browser extension messages to the Lockwright desktop app via IPC
 - **Robust Message Parsing**: Handles Chrome's length header bugs with fallback parsing mechanisms
 - **Cross-Platform Support**: Works on macOS (ARM64), Linux (x64), and Windows (x64)
 - **Command-Based Architecture**: Supports 50+ predefined commands for encryption, vaults, and password management
@@ -31,7 +32,7 @@ Native messaging bridge for PearPass browser extension. This library enables sec
 Install the package using npm:
 
 ```bash
-npm install git+https://github.com/tetherto/pearpass-lib-native-messaging-bridge.git
+npm install git+https://github.com/Dexterity-Works/pearpass-lib-native-messaging-bridge.git
 ```
 
 ## Usage Examples
@@ -131,8 +132,8 @@ The bridge connects to the desktop app via a socket:
 
 ## Related Projects
 
-- **PearPass Desktop App**: The main desktop application that manages vaults and encryption
-- **PearPass Browser Extension**: Browser extension that uses this native messaging bridge
+- **Lockwright desktop app**: The main desktop application that manages vaults and encryption
+- **Lockwright browser extension**: Browser extension that uses this native messaging bridge
 
 ## License
 
