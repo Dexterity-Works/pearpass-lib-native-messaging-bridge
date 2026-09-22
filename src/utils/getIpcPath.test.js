@@ -5,7 +5,7 @@ import { getIpcPath } from './getIpcPath'
 
 jest.mock('os')
 jest.mock('path')
-jest.mock('@tetherto/pearpass-lib-constants', () => ({
+jest.mock('lockwright-lib-constants', () => ({
   IPC_SOCKET_DIR_NAME: '.pearpass'
 }))
 

@@ -1,7 +1,7 @@
 import os from 'os'
 import path from 'path'
 
-import { IPC_SOCKET_DIR_NAME } from '@tetherto/pearpass-lib-constants'
+import { IPC_SOCKET_DIR_NAME } from 'lockwright-lib-constants'
 
 /**
  * Returns cross-platform IPC path.

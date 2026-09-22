@@ -19,7 +19,7 @@
     "bare-url": "^2.3.2",
     "events": "3.3.0",
     "pear-ipc": "^6.4.0",
-    "@tetherto/pearpass-lib-constants": "git+https://github.com/tetherto/pearpass-lib-constants.git"
+    "lockwright-lib-constants": "git+https://github.com/Dexterity-Works/lockwright-lib-constants.git"
   },
   "devDependencies": {
     "@babel/core": "7.26.10",
