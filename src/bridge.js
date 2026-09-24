@@ -12,6 +12,8 @@ import { NativeMessagingHandler } from './nativeMessagingHandler.js'
 import { getIpcPath } from './utils/getIpcPath.js'
 import { log } from './utils/log.js'
 
+const IPC_SOCKET_NAME = 'pearpass-native-messaging'
+
 // Desktop app status constants
 const DESKTOP_APP_STATUS = Object.freeze({
   CONNECTED: 'connected',
@@ -62,8 +64,8 @@ class NativeMessagingHost {
     this.ipcClient = null
     /** @type {boolean} */
     this.isRunning = false
-    /** @type {string} */
-    this.socketPath = getIpcPath('pearpass-native-messaging')
+    /** @type {string|null} */
+    this.socketPath = null
     /** @type {string} */
     this.desktopAppStatus = DESKTOP_APP_STATUS.UNKNOWN
   }
@@ -158,6 +160,15 @@ class NativeMessagingHost {
    */
   async connectToIPC() {
     try {
+      // Resolve per attempt: on Windows each desktop start publishes a
+      // fresh pipe name, so a path cached at host start goes stale.
+      this.socketPath = getIpcPath(IPC_SOCKET_NAME)
+      if (!this.socketPath) {
+        log('INFO', 'No IPC pipe published; desktop app is not running')
+        this.desktopAppStatus = DESKTOP_APP_STATUS.NOT_RUNNING
+        return
+      }
+
       this.desktopAppStatus = DESKTOP_APP_STATUS.CONNECTING
       log('INFO', `Attempting to connect to IPC server at: ${this.socketPath}`)
 
