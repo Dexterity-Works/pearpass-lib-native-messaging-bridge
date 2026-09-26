@@ -2,6 +2,8 @@
 
 // Native messaging host - bridges browser extension to PearPass desktop app via IPC
 
+import { createHmac, randomBytes, timingSafeEqual } from 'crypto'
+
 import IPC from 'pear-ipc'
 
 import {
@@ -162,12 +164,13 @@ class NativeMessagingHost {
     try {
       // Resolve per attempt: on Windows each desktop start publishes a
       // fresh pipe name, so a path cached at host start goes stale.
-      this.socketPath = getIpcPath(IPC_SOCKET_NAME)
-      if (!this.socketPath) {
+      const target = getIpcPath(IPC_SOCKET_NAME)
+      if (!target) {
         log('INFO', 'No IPC pipe published; desktop app is not running')
         this.desktopAppStatus = DESKTOP_APP_STATUS.NOT_RUNNING
         return
       }
+      this.socketPath = typeof target === 'string' ? target : target.pipe
 
       this.desktopAppStatus = DESKTOP_APP_STATUS.CONNECTING
       log('INFO', `Attempting to connect to IPC server at: ${this.socketPath}`)
@@ -190,6 +193,22 @@ class NativeMessagingHost {
 
       await Promise.race([this.ipcClient.ready(), timeoutPromise])
 
+      // A published pipe may be stale after a crash and squatted since.
+      // Nothing, least of all the pairing token, goes to a pipe owner
+      // that cannot prove it holds the secret from the pointer file.
+      if (
+        typeof target !== 'string' &&
+        !(await this.proveServer(target.secret))
+      ) {
+        log(
+          'INFO',
+          'Pipe owner failed the ownership proof; desktop app is not running'
+        )
+        this.desktopAppStatus = DESKTOP_APP_STATUS.NOT_RUNNING
+        this.closeIpcClient()
+        return
+      }
+
       log('INFO', 'Successfully connected to IPC server')
 
       // Update status
@@ -206,14 +225,53 @@ class NativeMessagingHost {
       this.updateDesktopAppStatus(error)
 
       // Clean up client on failure
-      if (this.ipcClient) {
-        try {
-          this.ipcClient.close()
-        } catch {
-          // Ignore close errors
-        }
-        this.ipcClient = null
-      }
+      this.closeIpcClient()
+    }
+  }
+
+  closeIpcClient() {
+    if (!this.ipcClient) return
+    try {
+      this.ipcClient.close()
+    } catch {
+      // Ignore close errors
+    }
+    this.ipcClient = null
+  }
+
+  /**
+   * Challenge the pipe owner: it must answer a fresh nonce with
+   * HMAC-SHA256(secret, nonce). Mismatch, error, or timeout all fail.
+   * @param {string} secretHex
+   * @returns {Promise<boolean>}
+   */
+  async proveServer(secretHex) {
+    const nonce = randomBytes(16)
+    const expected = createHmac('sha256', Buffer.from(secretHex, 'hex'))
+      .update(nonce)
+      .digest()
+    let timer
+    try {
+      const reply = await Promise.race([
+        this.ipcClient.nmProveServer({ nonceHex: nonce.toString('hex') }),
+        new Promise((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error('Ownership proof timed out')),
+            TIMEOUTS.IPC_CALL
+          )
+        })
+      ])
+      const proofHex = reply?.proofHex
+      return (
+        typeof proofHex === 'string' &&
+        /^[0-9a-f]{64}$/.test(proofHex) &&
+        timingSafeEqual(Buffer.from(proofHex, 'hex'), expected)
+      )
+    } catch (error) {
+      log('INFO', `Ownership proof failed: ${error.message}`)
+      return false
+    } finally {
+      clearTimeout(timer)
     }
   }
 

@@ -13,28 +13,39 @@ import { IPC_SOCKET_DIR_NAME } from 'lockwright-lib-constants'
  *
  * Windows pipe names are machine-global: any local user can squat a
  * well-known one and receive the pairing token. The desktop listens on
- * `<socketName>-<32 hex>` instead, fresh per start, and publishes that
- * name in `<home>/<IPC_SOCKET_DIR_NAME>/<socketName>.pipe`. Never guess
- * a name: no valid published pipe means the desktop is not running.
+ * `<socketName>-<32 hex>` instead, fresh per start, and publishes it in
+ * `<home>/<IPC_SOCKET_DIR_NAME>/<socketName>.pipe` as JSON
+ * `{ pipe, secret }`. A pointer left by a crash still names a pipe anyone
+ * can bind, so the host challenges the pipe owner with the secret
+ * (nmProveServer) before it sends anything. Never guess a name: no valid
+ * pointer means the desktop is not running. The pre-proof plain-string
+ * pointer is invalid for the same reason.
  * @param {string} socketName
- * @returns {string|null} null on win32 when no valid pipe is published
+ * @returns {string|{ pipe: string, secret: string }|null} the socket path,
+ *   or on win32 the published pipe and secret, or null when none is valid
  */
 export const getIpcPath = (socketName) => {
   if (os.platform() === 'win32') {
-    let pipePath
+    let pointer
     try {
-      pipePath = fs.readFileSync(
-        path.join(os.homedir(), IPC_SOCKET_DIR_NAME, `${socketName}.pipe`),
-        'utf8'
+      pointer = JSON.parse(
+        fs.readFileSync(
+          path.join(os.homedir(), IPC_SOCKET_DIR_NAME, `${socketName}.pipe`),
+          'utf8'
+        )
       )
     } catch {
       return null
     }
+    const { pipe, secret } = pointer ?? {}
     const prefix = `\\\\?\\pipe\\${socketName}-`
-    const suffix = pipePath.slice(prefix.length)
-    return pipePath.startsWith(prefix) && /^[0-9a-f]{32}$/.test(suffix)
-      ? pipePath
-      : null
+    const validPipe =
+      typeof pipe === 'string' &&
+      pipe.startsWith(prefix) &&
+      /^[0-9a-f]{32}$/.test(pipe.slice(prefix.length))
+    const validSecret =
+      typeof secret === 'string' && /^[0-9a-f]{64}$/.test(secret)
+    return validPipe && validSecret ? { pipe, secret } : null
   }
 
   return path.join(os.homedir(), IPC_SOCKET_DIR_NAME, `${socketName}.sock`)

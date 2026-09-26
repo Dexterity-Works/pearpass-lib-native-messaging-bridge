@@ -25,15 +25,18 @@ describe('getIpcPath', () => {
 
   describe('on win32', () => {
     const published = `\\\\?\\pipe\\test-socket-${'0123456789abcdef'.repeat(2)}`
+    const secret = 'ab'.repeat(32)
+    const pointer = (pipe, secretHex = secret) =>
+      JSON.stringify({ pipe, secret: secretHex })
 
     beforeEach(() => {
       os.platform.mockReturnValue('win32')
     })
 
-    it('returns the pipe the desktop published in the socket dir', () => {
-      fs.readFileSync.mockReturnValue(published)
+    it('returns the pipe and secret the desktop published in the socket dir', () => {
+      fs.readFileSync.mockReturnValue(pointer(published))
 
-      expect(getIpcPath(socketName)).toBe(published)
+      expect(getIpcPath(socketName)).toEqual({ pipe: published, secret })
       expect(fs.readFileSync).toHaveBeenCalledWith(
         '/home/testuser/.pearpass/test-socket.pipe',
         'utf8'
@@ -55,6 +58,21 @@ describe('getIpcPath', () => {
       ['an uppercase suffix', `\\\\?\\pipe\\test-socket-${'A'.repeat(32)}`],
       ['trailing junk', `${published}\n\\\\?\\pipe\\test-socket`],
       ['a UNC path', `\\\\attacker\\pipe\\test-socket-${'0'.repeat(32)}`]
+    ])('returns null for %s', (_, pipe) => {
+      fs.readFileSync.mockReturnValue(pointer(pipe))
+
+      expect(getIpcPath(socketName)).toBeNull()
+    })
+
+    it.each([
+      ['the pre-proof plain pipe name', published],
+      ['broken JSON', '{"pipe": "'],
+      ['a JSON string', JSON.stringify(published)],
+      ['no secret', JSON.stringify({ pipe: published })],
+      ['a short secret', pointer(published, 'ab'.repeat(16))],
+      ['an uppercase secret', pointer(published, 'AB'.repeat(32))],
+      ['a non-hex secret', pointer(published, 'zz'.repeat(32))],
+      ['a non-string secret', pointer(published, 42)]
     ])('returns null for %s', (_, contents) => {
       fs.readFileSync.mockReturnValue(contents)
 
