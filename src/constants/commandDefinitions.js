@@ -32,7 +32,7 @@ export const COMMAND_DEFINITIONS = [
   { id: 1014, name: 'activeVaultList' },
   { id: 1015, name: 'activeVaultAdd' },
   { id: 1016, name: 'activeVaultRemove' },
-  { id: 1047, name: 'activeVaultRemoveWriter' },
+  { id: 1048, name: 'activeVaultRemoveWriter' },
   { id: 1017, name: 'activeVaultClose' },
   { id: 1018, name: 'activeVaultCreateInvite' },
   { id: 1019, name: 'activeVaultDeleteInvite' },
@@ -61,6 +61,14 @@ export const COMMAND_DEFINITIONS = [
   { id: 1104, name: 'nmSecureRequest' },
   { id: 1105, name: 'nmCloseSession' },
   { id: 1106, name: 'nmConfirmPairing' },
+  { id: 1029, name: 'recordFailedMasterPassword' },
+  { id: 1030, name: 'getMasterPasswordStatus' },
+  { id: 1031, name: 'activeVaultRemoveFile' },
+  { id: 1032, name: 'resetFailedAttempts' },
+  { id: 1034, name: 'initWithPassword' },
+  { id: 1047, name: 'findOtpDuplicates' },
+  { id: 1049, name: 'activeVaultGetFile' },
+  { id: 1050, name: 'activeVaultAddFile' },
   { id: 1107, name: 'nmProveServer' },
 
   // OTP commands
